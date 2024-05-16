@@ -1,37 +1,93 @@
 import axios from "axios";
 import "./App.scss";
 import Student from "./BT student/Student";
-import Addstudent from "./BT student/Addstudent";
-import EditStudent from "./BT student/EditStudent";
+// import Addstudent from "./BT student/Addstudent";
+// import EditStudent from "./BT student/EditStudent";
 import { useEffect, useState } from "react";
 
 export default function App() {
+  //Get all students: ueState + useEffect
   const [students2, setStudents2] = useState([]);
+  const [sort, setSort] = useState("");
+  const [filter, setFilter] = useState("");
+
+  const handleSort = () => {
+    setSort("studentsName");
+  };
+
+  const handleFilter = (event) => {
+    event.preventDefault();
+    const inputFilter = event.target[0].value;
+
+    setFilter(inputFilter.trim());
+    // setFilter(JSON.parse(localStorage.getItem("filter")));
+  };
+
+  // pagination
+  const [page, setPage] = useState(1);
+  const limit = 3;
+  const [totalStudent, setTotalStudent] = useState(0);
+  const [totalPage, setTotalPage] = useState(0);
+
   useEffect(() => {
-    const getAllStudents = () => {
-      axios
-        .get("http://localhost:3000/students2")
-        .then((res) => setStudents2(res.data))
-        .catch((err) => console.log(err));
+    const getAllStudents = async () => {
+      try {
+        const response = await axios.get(`http://localhost:3000/students2`);
+        setTotalStudent(response.data.length);
+
+        // console.log(response.data.length, "response");
+      } catch (err) {
+        console.log("failed to fetch data", err);
+      }
     };
-    getAllStudents();
+    getAllStudents(); // Call getAllStudents inside useEffect
   }, []);
 
+  useEffect(() => {
+    const getAllStudents = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:3000/students2?_page=${page}&_limit=${limit}`
+        );
+        setStudents2(response.data);
+        setTotalPage(Math.ceil(totalStudent / limit));
+      } catch (err) {
+        console.log("failed to fetch data", err);
+      }
+    };
+    getAllStudents(); // Call getAllStudents inside useEffect
+  }, [page, totalPage, totalStudent]);
+
+  // useEffect(() => {
+  //   const getAllStudents = () => {
+  //     let url = `http://localhost:3000/students2?_sort=${sort}`;
+  //     if (filter !== "") url += `&studentsName=${filter}`;
+  //     axios
+  //       .get(url)
+  //       .then((res) => setStudents2(res.data))
+  //       .catch((err) => console.log(err));
+  //   };
+
+  //   getAllStudents(); // Call getAllStudents inside useEffect
+  // }, [sort, filter]);
+
   const DeleteStudent = (id) => {
-    console.log("delete", id);
+    console.log(id, "sss");
     axios.delete(`http://localhost:3000/students2/${id}`);
     const index = students2.findIndex((item) => item.id == id);
     students2.splice(index, 1);
+
     setStudents2([...students2]);
+    setPage(page);
+    setTotalStudent(updatedStudents.length);
+    setTotalPage(Math.ceil(totalStudent / limit));
   };
 
-  const [toggleAdd, setToggleAdd] = useState(false);
-  const handleToggleAdd = () => {
-    setToggleAdd(!toggleAdd);
-  };
-  const handleSubmit = (event) => {
-    setToggleAdd(true);
-    setToggleEdit(false);
+  //modal add new student
+  const [show, setShow] = useState(false);
+  const handleClose = () => setShow(false);
+  const handleShow = () => setShow(true);
+  const handleSubmitAdd = (event) => {
     event.preventDefault();
     console.log("dhdjsd");
     console.dir(event.target, "target");
@@ -46,61 +102,57 @@ export default function App() {
     axios
       .post("http://localhost:3000/students2", newStudent)
       .then(() => {
-        setStudents2([...students2, newStudent]);
         console.log(newStudent, "resdata");
-        event.target.reset();
+        setStudents2([...students2, newStudent]);
+        setTotalPage(Math.ceil(totalStudent / limit));
+        handleClose();
+        alert("Successfully added a new student!");
       })
       .catch((err) => console.log(err));
-    setToggleAdd(false);
-    localStorage.setItem("students".JSON.stringify(students2));
   };
 
-  const [toggleEdit, setToggleEdit] = useState(false);
-  const handleToggleEdit = () => {
-    setToggleEdit(!toggleEdit);
+  //modal edit student
+  const [showEdit, setShowEdit] = useState(false);
+  const student = JSON.parse(localStorage.getItem("student")) || {};
+  const handleCloseEdit = () => setShowEdit(false);
+  const handleShowEdit = () => setShowEdit(true);
+  const handleEdit = (student) => {
+    setShowEdit(true);
+    console.log(student, "student");
+    localStorage.setItem("student", JSON.stringify(student));
   };
-  // const [student, setStudent] = useState(
-  //   JSON.parse(localStorage.getItem("studentEdit")) || {}
-  // );
-  // const ediStudent = (id) => {
-  //   setToggleAdd(false);
-  //   setToggleEdit(true);
-  //   // localStorage.getItem("studentEdit", JSON.stringify(id));
-  //   const index = students2.findIndex((item) => item.id == id);
-  //   console.log(index, "index");
-  //   console.log(students2[index], "student");
-  //   const student = {
-  //     studentsName: students2[index].studentaName,
-  //   };
-  //   localStorage.setItem("studentEdit", JSON.stringify(student));
-  //   setStudent(student);
-  // };
-
-  const handleEdited = (event, id) => {
+  const handleSubmitEdit = (event) => {
     event.preventDefault();
-    localStorage.getItem("studentEdit", JSON.stringify(id));
-    const index = students2.findIndex((item) => item.id == id);
-    // const student = JSON.parse(localStorage.getItem("student"));
-    const indexEdit = students2.findIndex((ele) => ele.id == student.id);
-    console.log(indexEdit, "indexEdit");
+    console.log(event.target[0].value);
     axios
       .patch(`http://localhost:3000/students2/${student.id}`, {
         studentsName: event.target[0].value,
         mail: event.target[1].value,
         address: event.target[2].value,
         phone: event.target[3].value,
-        status: true,
       })
-      .then(() => {
-        students2[indexEdit].studentsName = event.target[0].value;
-        students2[indexEdit].mail = event.target[1].value;
-        students2[indexEdit].address = event.target[2].value;
-        students2[indexEdit].phone = event.target[3].value;
-        setStudents2([...students2]);
-        setToggleEdit(false);
-        localStorage.setItem("students".JSON.stringify(students2));
-      })
-      .catch((err) => console.log(err, "error"));
+      .then((res) => {
+        if (res.status === 200 || res.status === 201) {
+          const index = students2.findIndex((item) => item.id == student.id);
+          students2[index].studentsName = event.target[0].value;
+          students2[index].mail = event.target[1].value;
+          students2[index].address = event.target[2].value;
+          students2[index].phone = event.target[3].value;
+          setStudents2([...students2]);
+          handleCloseEdit();
+          alert("Successfully edited student!");
+        }
+      });
+  };
+
+  //pagination
+
+  const handleChangePage = (e, value) => {
+    console.log(value);
+    setPage(value);
+    console.log(e, "e?");
+    // setPage(parseInt(e.target.innerText));
+    //ham xu ly chuyen page
   };
 
   return (
@@ -108,18 +160,31 @@ export default function App() {
       <div id="app-table">
         {/* <Students /> */}
         <Student
-          handleDelete={DeleteStudent}
           students2={students2}
-          handleAdd={handleToggleAdd}
-          handleToogleEdit={handleToggleEdit}
+          handleDelete={DeleteStudent}
+          show={show}
+          handleShow={handleShow}
+          handleClose={handleClose}
+          handleSubmitAdd={handleSubmitAdd}
+          handleEdit={handleEdit}
+          showEdit={showEdit}
+          handleCloseEdit={handleCloseEdit}
+          handleShowEdit={handleShowEdit}
+          student={student}
+          handleSubmitEdit={handleSubmitEdit}
+          handleSort={handleSort}
+          handleFilter={handleFilter}
+          pageActive={page}
+          totalPage={totalPage}
+          handleChangePage={handleChangePage}
         />
       </div>
-      <div id="app-form">
+      {/* <div id="app-form">
         {toggleAdd && <Addstudent handleSubmit={handleSubmit} />}
         {toggleEdit == true && (
           <EditStudent handleSubmitEdit={handleEdited} student={student} />
         )}
-      </div>
+      </div> */}
     </>
   );
 }

@@ -1,14 +1,6 @@
 {
   "students2": [
     {
-      "id": 396,
-      "studentsName": "a",
-      "mail": "",
-      "address": "",
-      "phone": "",
-      "status": false
-    },
-    {
       "id": 140,
       "studentsName": "a",
       "mail": "",
