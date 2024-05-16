@@ -78,10 +78,13 @@ export default function App() {
     students2.splice(index, 1);
 
     setStudents2([...students2]);
-    setPage(page);
-    setTotalStudent(updatedStudents.length);
+
+    //
+    setTotalStudent(totalStudent - 1);
     setTotalPage(Math.ceil(totalStudent / limit));
   };
+  console.log(totalStudent, "totalStudent");
+  console.log(totalPage, "totalPage");
 
   //modal add new student
   const [show, setShow] = useState(false);
@@ -104,7 +107,10 @@ export default function App() {
       .then(() => {
         console.log(newStudent, "resdata");
         setStudents2([...students2, newStudent]);
+
+        setTotalStudent(totalStudent + 1);
         setTotalPage(Math.ceil(totalStudent / limit));
+
         handleClose();
         alert("Successfully added a new student!");
       })
